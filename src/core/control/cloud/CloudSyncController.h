@@ -40,6 +40,9 @@ public:
     void setStatusCallback(std::function<void(const std::string&)> cb);
     void clearStatusCallback();
     void setStatus(const std::string& status);
+
+    void setConnectionCallback(std::function<void(bool)> cb);  // fork: menubar Drive indicator
+    void clearConnectionCallback();
     auto getCredentialsPath() const -> std::string;
 
 private:
@@ -56,6 +59,8 @@ private:
     void setCloudTokens(const std::string& accessToken, const std::string& refreshToken, long long expiresInSeconds);
     void setCloudFileId(const fs::path& path, const std::string& fileId);
     void setCloudPdfFileId(const std::string& pdfName, const std::string& fileId);  // fork: PDF copy
+
+    void notifyConnectionState(bool connected);  // fork: menubar Drive indicator
     void setCloudFolderId(const std::string& folderId);
 
     // Helpers (both main and job threads, unless noted)
@@ -81,6 +86,10 @@ private:
 
     mutable std::mutex statusCbMtx;
     std::function<void(const std::string&)> statusCallback;
+
+    // fork: callback for the menubar Drive connection indicator
+    mutable std::mutex connectionCbMtx;
+    std::function<void(bool)> connectionCallback;
 
     fs::path credentialsFile;
 };

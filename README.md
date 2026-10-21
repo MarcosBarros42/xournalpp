@@ -22,6 +22,7 @@ A branch [`feature/drive-sync`](https://github.com/MarcosBarros42/xournalpp/tree
 | ♻️ **Renovação automática de token** | `refresh_token` renovado e salvo nas configurações, com expiração gerenciada |
 | ☁️ **Sincronização no Drive** | Sobe o `.xopp` para uma pasta do Drive (criando ou atualizando o arquivo) |
 | 🖥️ **Painel integrado nas Preferências** | Status da conexão, botões de Login / Atualizar / Sincronizar / Logout |
+| 🚦 **Indicador na menubar** | `DRIVE : CONECTADO` / `DRIVE : DESCONECTADO` ao lado de *Ajuda*, atualizado em tempo real no login/logout |
 | 📁 **Escopo mínimo** | Usa apenas `drive.file` — o app só enxerga os arquivos que ele mesmo criou |
 
 ### Primeiro uso: configurando as credenciais
@@ -85,6 +86,10 @@ flowchart LR
 - **Instalação portátil**: o `cacert.pem` fica junto do exe e `package.sh` copia automaticamente no build (sem depender do ambiente MSYS2 no runtime)
 - **`PATCH` em vez de `PUT`**: o endpoint de atualização de conteúdo do Drive v3 aceita `PATCH` de forma consistente; descobrimos na prática que `PUT` retorna 404 nesse endpoint
 - **Erros amistosos**: falhas HTTP (como 404/401 do Google) aparecem na UI com a mensagem do servidor, para diagnóstico fácil
+- **Indicador na menubar é um widget, não um item do `GMenuModel`**: a menubar do GTK3 é criada internamente pelo
+  `GtkApplicationWindow` a partir do modelo XML, e item de menu **sem action não é renderizado** nela. Por isso o
+  indicador é um `GtkMenuItem`/`GtkLabel` real anexado ao `GtkMenuBar` (`Menubar::setupDriveStatusWidget()`),
+  com fallback no sinal `realize` caso a menubar seja criada depois
 
 ---
 

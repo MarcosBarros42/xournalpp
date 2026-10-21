@@ -1,5 +1,6 @@
 #include "Menubar.h"
 
+#include "control/cloud/CloudSyncController.h"  // fork: Drive connection indicator
 #include "control/Control.h"
 #include "gui/GladeSearchpath.h"
 #include "gui/MainWindow.h"
@@ -17,6 +18,24 @@
 constexpr auto MENU_XML_FILE = "mainmenubar.xml";
 constexpr auto MENU_ID = "menubar";
 constexpr auto UNDO_REDO_SECTION_ID = "sectionUndoRedo";
+
+// fork: Return the internally created widget GtkMenuBar from the GtkApplicationWindow (GMenuModel menubar)
+static GtkWidget* findInternalMenuBar(GtkWidget* widget) {
+    if (GTK_IS_MENU_BAR(widget)) {
+        return widget;
+    }
+    if (GTK_IS_CONTAINER(widget)) {
+        GList* children = gtk_container_get_children(GTK_CONTAINER(widget));
+        for (GList* l = children; l; l = l->next) {
+            if (GtkWidget* found = findInternalMenuBar(GTK_WIDGET(l->data))) {
+                g_list_free(children);
+                return found;
+            }
+        }
+        g_list_free(children);
+    }
+    return nullptr;
+}
 
 Menubar::Menubar() = default;
 Menubar::~Menubar() noexcept = default;
@@ -65,6 +84,7 @@ void Menubar::populate(const GladeSearchpath* gladeSearchPath, MainWindow* win) 
     menu = G_MENU_MODEL(gtk_builder_get_object(builder.get(), MENU_ID));
 
     Control* ctrl = win->getControl();
+    this->ctrl = ctrl;
 
     recentDocumentsSubmenu = std::make_unique<RecentDocumentsSubmenu>(ctrl, GTK_APPLICATION_WINDOW(win->getWindow()));
     toolbarSelectionSubmenu =
@@ -83,6 +103,51 @@ void Menubar::populate(const GladeSearchpath* gladeSearchPath, MainWindow* win) 
     }
 
     undoRedoSection = G_MENU(gtk_builder_get_object(builder.get(), UNDO_REDO_SECTION_ID));
+
+    // fork: add the Drive connection indicator as a real widget at the end of the internal menubar
+    if (!this->setupDriveStatusWidget(GTK_WIDGET(win->getWindow()))) {
+        // The internal menubar may be created lazily -> retry as soon as the window is realized
+        g_signal_connect(win->getWindow(), "realize",
+                         G_CALLBACK(+[](GtkWidget* widget, gpointer self) {
+                             static_cast<Menubar*>(self)->setupDriveStatusWidget(widget);
+                         }),
+                         this);
+    }
+
+    if (auto* cloud = ctrl->getCloudSyncController(); cloud) {
+        this->setDriveStatus(cloud->isLoggedIn());
+    }
+}
+
+bool Menubar::setupDriveStatusWidget(GtkWidget* window) {
+    if (this->driveStatusItem) {
+        return true;
+    }
+    GtkWidget* menuBarWidget = findInternalMenuBar(window);
+    if (!menuBarWidget) {
+        return false;
+    }
+
+    driveStatusLabel = GTK_LABEL(gtk_label_new(nullptr));
+
+    // bold like the surrounding menubar labels
+    gtk_widget_set_name(GTK_WIDGET(driveStatusLabel), "driveStatusLabel");
+    GtkCssProvider* css = gtk_css_provider_new();
+    gtk_css_provider_load_from_data(css, "#driveStatusLabel { font-weight: bold; }", -1, nullptr);
+    gtk_style_context_add_provider(gtk_widget_get_style_context(GTK_WIDGET(driveStatusLabel)),
+                                   GTK_STYLE_PROVIDER(css), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    g_object_unref(css);
+
+    driveStatusItem = gtk_menu_item_new();
+    gtk_container_add(GTK_CONTAINER(driveStatusItem), GTK_WIDGET(driveStatusLabel));
+    gtk_menu_shell_append(GTK_MENU_SHELL(menuBarWidget), driveStatusItem);
+    gtk_widget_show_all(driveStatusItem);
+
+    // apply the current state, in case it was set before the widget existed
+    if (auto* cloud = this->ctrl ? this->ctrl->getCloudSyncController() : nullptr) {
+        this->setDriveStatus(cloud->isLoggedIn());
+    }
+    return true;
 }
 
 void Menubar::setUndoDescription(const std::string& description) {
@@ -95,6 +160,14 @@ void Menubar::setRedoDescription(const std::string& description) {
     xoj_assert(undoRedoSection);
     g_menu_remove(undoRedoSection, 1);
     g_menu_append(undoRedoSection, description.c_str(), "win.redo");
+}
+
+void Menubar::setDriveStatus(bool connected) {
+    if (!driveStatusItem || !driveStatusLabel) {
+        return;
+    }
+    // fork: uppercase Portuguese label, as in the reference design
+    gtk_label_set_text(driveStatusLabel, connected ? "DRIVE : CONECTADO" : "DRIVE : DESCONECTADO");
 }
 
 void Menubar::setDisabled(bool disabled) {

@@ -299,6 +299,15 @@ void Control::saveSettings() {
 void Control::initWindow(MainWindow* win) {
     this->win = win;
 
+    // fork: keep the Drive connection indicator in the menubar in sync
+    if (this->cloudSyncController) {
+        this->cloudSyncController->setConnectionCallback([win](bool connected) {
+            if (win) {
+                win->getMenubar()->setDriveStatus(connected);
+            }
+        });
+    }
+
     this->actionDB = std::make_unique<ActionDatabase>(this);
     this->navHistory = std::make_unique<NavigationHistory>(this);
 

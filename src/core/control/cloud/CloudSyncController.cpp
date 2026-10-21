@@ -257,7 +257,10 @@ CloudSyncController::CloudSyncController(Control* controlIn):
     this->accessExpireEpoch = expire;
 }
 
-CloudSyncController::~CloudSyncController() { clearStatusCallback(); }
+CloudSyncController::~CloudSyncController() {
+    clearStatusCallback();
+    clearConnectionCallback();
+}
 
 auto CloudSyncController::isConfigured() const -> bool {
     return fs::exists(this->credentialsFile);
@@ -289,6 +292,28 @@ void CloudSyncController::setStatus(const std::string& status) {
             this->statusCallback(status);
         }
     });
+}
+
+// fork: callbacks for the menubar Drive connection indicator
+void CloudSyncController::setConnectionCallback(std::function<void(bool)> cb) {
+    const std::lock_guard<std::mutex> lock{connectionCbMtx};
+    this->connectionCallback = std::move(cb);
+}
+
+void CloudSyncController::clearConnectionCallback() {
+    const std::lock_guard<std::mutex> lock{connectionCbMtx};
+    this->connectionCallback = nullptr;
+}
+
+void CloudSyncController::notifyConnectionState(bool connected) {
+    std::function<void(bool)> cb;
+    {
+        const std::lock_guard<std::mutex> lock{connectionCbMtx};
+        cb = this->connectionCallback;
+    }
+    if (cb) {
+        Util::execInUiThread([cb = std::move(cb), connected]() { cb(connected); });
+    }
 }
 
 auto CloudSyncController::getCredentialsPath() const -> std::string {
@@ -381,6 +406,8 @@ void CloudSyncController::setCloudTokens(const std::string& accessTokenIn, const
         }
         this->settings->customSettingsChanged();
     }
+    // fork: update the menubar Drive connection indicator
+    this->notifyConnectionState(!refreshTokenIn.empty());
 }
 
 void CloudSyncController::setCloudFileId(const fs::path& path, const std::string& fileId) {

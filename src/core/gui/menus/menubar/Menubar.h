@@ -16,6 +16,7 @@
 #include <string_view>
 
 #include <gio/gio.h>  // for GMenu, GMenuItem...
+#include <gtk/gtk.h>  // fork: Drive connection indicator widget
 
 #include "util/raii/GObjectSPtr.h"
 
@@ -23,6 +24,7 @@
 
 class GladeSearchpath;
 class MainWindow;
+class Control;
 
 class RecentDocumentsSubmenu;
 class ToolbarSelectionSubmenu;
@@ -46,6 +48,8 @@ public:
     void setUndoDescription(const std::string& description);
     void setRedoDescription(const std::string& description);
 
+    void setDriveStatus(bool connected);  // fork: Drive connection indicator
+
     template <typename gobj, typename Fun>
     gobj* get(const std::string_view& name, Fun&& converter) const {
         gobj* w = converter(gtk_builder_get_object(const_cast<GtkBuilder*>(builder.get()), name.data()));
@@ -56,8 +60,12 @@ public:
     }
 
 private:
+    bool setupDriveStatusWidget(GtkWidget* window);  // fork: Drive connection indicator
+
     xoj::util::GObjectSPtr<GtkBuilder> builder;
     GMenuModel* menu;  // owned by `builder`
+
+    Control* ctrl = nullptr;  // not owned
 
     // Dynamically created submenus -- also add to forEachSubmenu() below
     std::unique_ptr<RecentDocumentsSubmenu> recentDocumentsSubmenu;
@@ -78,4 +86,9 @@ private:
     }
 
     GMenu* undoRedoSection;  // owned by `builder`
+
+    // fork: Drive connection indicator, a real widget appended to the internal GtkMenuBar
+    // (items without action are not rendered in the model menubar, hence the widget approach)
+    GtkWidget* driveStatusItem = nullptr;   // owned by the GtkMenuBar
+    GtkLabel* driveStatusLabel = nullptr;
 };
