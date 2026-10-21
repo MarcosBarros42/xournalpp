@@ -52,3 +52,25 @@ private:
     std::string initialFileId;
     std::string error;
 };
+
+// fork: uploads a PDF copy of the document alongside the .xopp file
+class DrivePdfUploadJob: public Job {
+public:
+    DrivePdfUploadJob(CloudSyncController* controllerIn, std::string pdfNameIn, std::string initialFolderId,
+                      std::string initialFileId);
+    ~DrivePdfUploadJob() override;
+
+    void run() override;
+    void afterRun() override;
+    auto getType() -> JobType override;
+
+private:
+    CloudSyncController* controller = nullptr;
+    std::string pdfName;
+    fs::path pdfPath;
+    std::string folderId;
+    std::string fileId;
+    std::string initialFolderId;
+    std::string initialFileId;
+    std::string error;
+};

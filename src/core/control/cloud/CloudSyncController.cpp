@@ -330,9 +330,21 @@ void CloudSyncController::uploadDocument(const fs::path& path) {
         auto ids = cloud.child("fileIds");
         ids.getString(path.filename().string(), fileId);
     }
-    auto* job = new DriveUploadJob(this, path, std::move(folderId), std::move(fileId));
+    auto* job = new DriveUploadJob(this, path, folderId, std::move(fileId));
     this->control->getScheduler()->addJob(job, JOB_PRIORITY_NONE);
     job->unref();
+
+    // fork: also upload a PDF copy of the document
+    fs::path pdfName{path.filename()};
+    Util::safeReplaceExtension(pdfName, "pdf");
+    std::string pdfFileId;
+    if (!folderId.empty()) {
+        auto ids = cloud.child("pdfFileIds");
+        ids.getString(pdfName.string(), pdfFileId);
+    }
+    auto* pdfJob = new DrivePdfUploadJob(this, pdfName.string(), std::move(folderId), std::move(pdfFileId));
+    this->control->getScheduler()->addJob(pdfJob, JOB_PRIORITY_NONE);
+    pdfJob->unref();
 }
 
 void CloudSyncController::syncNow() {
@@ -387,6 +399,17 @@ void CloudSyncController::setCloudFolderId(const std::string& folderId) {
     }
     auto cloud = this->settings->getCustomElement("cloud");
     cloud.setString("folderId", folderId);
+    this->settings->customSettingsChanged();
+}
+
+// fork: persist the Drive fileId of the PDF copy, keyed by its file name
+void CloudSyncController::setCloudPdfFileId(const std::string& pdfName, const std::string& fileId) {
+    if (!this->settings) {
+        return;
+    }
+    auto cloud = this->settings->getCustomElement("cloud");
+    auto ids = cloud.child("pdfFileIds");
+    ids.setString(pdfName, fileId);
     this->settings->customSettingsChanged();
 }
 

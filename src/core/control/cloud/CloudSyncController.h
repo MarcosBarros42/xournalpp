@@ -19,6 +19,7 @@ class Control;
 class Settings;
 class CloudLoginJob;
 class DriveUploadJob;
+class DrivePdfUploadJob;
 
 class CloudSyncController {
 public:
@@ -44,6 +45,7 @@ public:
 private:
     friend class CloudLoginJob;
     friend class DriveUploadJob;
+    friend class DrivePdfUploadJob;
 
     // Called from job threads (network only, no UI access)
     auto performLogin(std::string& accessTokenOut, std::string& refreshTokenOut, long long& expiresInSecondsOut)
@@ -53,6 +55,7 @@ private:
     // Called from the main thread, e.g. from a job's afterRun()
     void setCloudTokens(const std::string& accessToken, const std::string& refreshToken, long long expiresInSeconds);
     void setCloudFileId(const fs::path& path, const std::string& fileId);
+    void setCloudPdfFileId(const std::string& pdfName, const std::string& fileId);  // fork: PDF copy
     void setCloudFolderId(const std::string& folderId);
 
     // Helpers (both main and job threads, unless noted)
