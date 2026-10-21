@@ -101,6 +101,7 @@ Primeira versão estável da sincronização. O que está pronto:
   - URL de update duplicava `files/` (`.../drive/v3/files/files/{id}`)
   - `PUT` não é aceito pelo endpoint de update do Drive → trocado por `PATCH`
   - Bundle de certificados CA agora é resolvido a partir da pasta do próprio exe (`cacert.pem`)
+  - Bundle CA aplicado **também** em `tokenRequest()` (troca/refresh de tokens OAuth) — antes só `httpCall()` configurava `CURLOPT_CAINFO`, e a renovação de token falhava com *"Problem with the SSL CA cert (path? access rights?)"*
 
 ---
 
