@@ -65,6 +65,7 @@ class SearchBar;
 class Settings;
 class TextEditor;
 class XournalScheduler;
+class CloudSyncController;
 class ZoomControl;
 class ToolMenuHandler;
 class XojFont;
@@ -292,6 +293,7 @@ public:
     void disableSidebarTmp(bool disabled);
 
     XournalScheduler* getScheduler() const;
+    CloudSyncController* getCloudSyncController() const;
 
     void block(const std::string& name);
     void unblock();
@@ -535,6 +537,7 @@ private:
     fs::path lastAutosaveFilename;
 
     XournalScheduler* scheduler;
+    CloudSyncController* cloudSyncController = nullptr;
 
     /**
      * State / Blocking attributes

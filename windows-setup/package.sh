@@ -35,6 +35,9 @@ ldd "$build_dir/xournalpp.exe" | grep "${prefix}.*\.dll" -o | sort -u | xargs -I
 # CI workaround: copy libcrypto and libssl in case they are not already copied.
 ldd "$build_dir/xournalpp.exe" | grep -E 'lib(ssl|crypto)[^\.]*\.dll' -o | sort -u | xargs -I{} cp "${prefix}/bin/{}" "$setup_dir"/bin/
 
+echo "copy CA certificate bundle for curl"
+cp "$prefix"/etc/ssl/certs/ca-bundle.crt "$setup_dir"/bin/cacert.pem
+
 echo "Installing GTK/Glib translations"
 # Copy system locale files
 for trans in "$build_dir"/po/*.gmo; do

@@ -204,6 +204,9 @@ else ()
     message(STATUS "Disable GtkSourceView TeX syntax highlighting")
 endif ()
 
+pkg_check_modules(LibCurl REQUIRED IMPORTED_TARGET "libcurl >= 7.61")
+pkg_check_modules(JsonGlib REQUIRED IMPORTED_TARGET "json-glib-1.0 >= 1.2")
+
 option(ENABLE_FLOAT_FROM_CHARS "Use floating point std::from_chars for parsing doubles" ON)
 include(CheckCXXSourceCompiles)
 check_cxx_source_compiles([[
@@ -267,6 +270,9 @@ target_link_libraries(external_modules INTERFACE
         PkgConfig::ExternalModules
         $<$<TARGET_EXISTS:Lua::lua>:Lua::lua>
         $<$<TARGET_EXISTS:PkgConfig::GtkSourceView>:PkgConfig::GtkSourceView>
+        $<$<TARGET_EXISTS:PkgConfig::LibCurl>:PkgConfig::LibCurl>
+        $<$<TARGET_EXISTS:PkgConfig::JsonGlib>:PkgConfig::JsonGlib>
+        $<$<PLATFORM_ID:Windows>:ws2_32>
         $<$<TARGET_EXISTS:PkgConfig::ExternalAudioModules>:PkgConfig::ExternalAudioModules>
         $<$<TARGET_EXISTS:X11::Xi>:X11::Xi>
         $<$<TARGET_EXISTS:X11::X11>:X11::X11>

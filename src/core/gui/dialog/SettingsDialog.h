@@ -23,6 +23,7 @@
 #include "util/raii/GtkWindowUPtr.h"
 
 #include "ButtonConfigGui.h"
+#include "DriveSettingsPanel.h"
 #include "LanguageConfigGui.h"
 #include "LatexSettingsPanel.h"
 #include "SettingsDialogPaletteTab.h"
@@ -100,6 +101,7 @@ private:
 
     LatexSettingsPanel latexPanel;
     SettingsDialogPaletteTab paletteTab;
+    std::unique_ptr<DriveSettingsPanel> drivePanel;
 
     std::function<void()> callback;
 };

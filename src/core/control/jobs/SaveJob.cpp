@@ -6,6 +6,7 @@
 #include <glib.h>   // for g_warning, g_error
 
 #include "control/Control.h"              // for Control
+#include "control/cloud/CloudSyncController.h"  // fork: Google Drive sync
 #include "control/jobs/BlockingJob.h"     // for BlockingJob
 #include "control/xojfile/SaveHandler.h"  // for SaveHandler
 #include "model/Document.h"               // for Document
@@ -40,6 +41,15 @@ void SaveJob::afterRun() {
         callback(false);
     } else {
         this->control->resetSavedStatus();
+
+        Document* doc = this->control->getDocument();
+        doc->lock_shared();
+        fs::path savedPath = doc->getFilepath();
+        doc->unlock_shared();
+        if (this->control->getCloudSyncController()) {
+            this->control->getCloudSyncController()->uploadDocument(savedPath);
+        }
+
         callback(true);
     }
 }

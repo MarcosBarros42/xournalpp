@@ -32,6 +32,7 @@
 
 #include "ButtonConfigGui.h"       // for ButtonConfigGui
 #include "DeviceTestingArea.h"     // for DeviceTestingArea
+#include "DriveSettingsPanel.h"    // fork: Cloud / Drive tab
 #include "LanguageConfigGui.h"     // for LanguageConfigGui
 #include "LatexSettingsPanel.h"    // for LatexSettingsPanel
 #include "filesystem.h"            // for is_directory
@@ -70,6 +71,8 @@ SettingsDialog::SettingsDialog(GladeSearchpath* gladeSearchPath, Settings* setti
 
     gtk_box_append(GTK_BOX(builder.get("latexTabBox")), this->latexPanel.getPanel());
     gtk_box_append(GTK_BOX(builder.get("paletteTabBox")), this->paletteTab.getPanel());
+    drivePanel = std::make_unique<DriveSettingsPanel>(gladeSearchPath, control);
+    gtk_box_append(GTK_BOX(builder.get("cloudTabBox")), drivePanel->getPanel());
 
     g_signal_connect(GTK_RANGE(builder.get("zoomCallibSlider")), "value-changed",
                      G_CALLBACK(+[](GtkRange* range, gpointer self) {

@@ -28,6 +28,7 @@
 #include "control/jobs/SaveJob.h"                                // for SaveJob
 #include "control/jobs/Scheduler.h"                              // for JOB_...
 #include "control/jobs/XournalScheduler.h"                       // for Xour...
+#include "control/cloud/CloudSyncController.h"
 #include "control/layer/LayerController.h"                       // for Laye...
 #include "control/pagetype/PageTypeHandler.h"                    // for Page...
 #include "control/settings/ButtonConfig.h"                       // for Butt...
@@ -153,6 +154,7 @@ Control::Control(GApplication* gtkApp, GladeSearchpath* gladeSearchPath, bool di
     this->scrollHandler = new ScrollHandler(this);
 
     this->scheduler = new XournalScheduler();
+    this->cloudSyncController = new CloudSyncController(this);
 
     this->doc = new Document(this);
 
@@ -188,6 +190,8 @@ Control::~Control() {
 
     deleteLastAutosaveFile();
     this->scheduler->stop();
+    delete this->cloudSyncController;
+    this->cloudSyncController = nullptr;
     this->changedPages.clear();  // can be removed, will be done by implicit destructor
 
     delete this->pluginController;
@@ -2640,6 +2644,8 @@ auto Control::getDocument() const -> Document* { return this->doc; }
 auto Control::getToolHandler() const -> ToolHandler* { return this->toolHandler; }
 
 auto Control::getScheduler() const -> XournalScheduler* { return this->scheduler; }
+
+auto Control::getCloudSyncController() const -> CloudSyncController* { return this->cloudSyncController; }
 
 auto Control::getWindow() const -> MainWindow* { return this->win; }
 
