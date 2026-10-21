@@ -67,6 +67,16 @@ namespace {
         return size * nmemb;
     }
 
+#ifdef _WIN32
+    auto setCaBundleFromExeDir(CURL* curl) -> void {
+        std::wstring exeFile(MAX_PATH, L'\0');
+        DWORD exeLen = GetModuleFileNameW(nullptr, exeFile.data(), static_cast<DWORD>(exeFile.size()));
+        std::filesystem::path exePath(std::wstring(exeFile.data(), exeLen));
+        static const std::string caPemFile = (exePath.parent_path() / "cacert.pem").string();
+        curl_easy_setopt(curl, CURLOPT_CAINFO, caPemFile.c_str());
+    }
+#endif
+
     struct CurlGlobalInit {
         CurlGlobalInit() { curl_global_init(CURL_GLOBAL_DEFAULT); }
         ~CurlGlobalInit() { curl_global_cleanup(); }
@@ -427,6 +437,9 @@ auto CloudSyncController::tokenRequest(const std::string& body, std::string& acc
     struct curl_slist* headers = nullptr;
     headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
     curl_easy_setopt(curl, CURLOPT_URL, OAUTH_TOKEN_URL);
+#ifdef _WIN32
+    setCaBundleFromExeDir(curl);
+#endif
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body.c_str());
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, static_cast<long>(body.size()));
@@ -530,11 +543,7 @@ auto CloudSyncController::httpCall(const std::string& method, const std::string&
     }
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 #ifdef _WIN32
-    std::wstring exeFile(MAX_PATH, L'\0');
-    DWORD exeLen = GetModuleFileNameW(nullptr, exeFile.data(), static_cast<DWORD>(exeFile.size()));
-    std::filesystem::path exePath(std::wstring(exeFile.data(), exeLen));
-    static const std::string caPemFile = (exePath.parent_path() / "cacert.pem").string();
-    curl_easy_setopt(curl, CURLOPT_CAINFO, caPemFile.c_str());
+    setCaBundleFromExeDir(curl);
 #endif
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToString);
